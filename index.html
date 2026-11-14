@@ -349,6 +349,11 @@
   const marioDead=[
     '     rrrrr      ','    rrrrrrrrr   ','    bbbhhhbb    ','   bhbhhddhhb   ','   bhbhhddhhb   ','    bhhhhddh    ','      hhhhh     ',' hhh rrrrrr hhh ',' hhhrrbrrbrrhhh ','  rrrrbbbbrrrr  ','   rrbboobbrr   ','    bbbbbbbb    ','    bbbbbbbb    ','   bbbb  bbbb   ','  ddddd  ddddd  ','  dddd    dddd  '
   ].map(s=>s.replaceAll(' ','.'));
+  // Grow each row in place so the head stays crisp and each arm appears once.
+  const marioLargeRowHeights=[1,1,1,1,1,1,1,2,2,2,2,2,2,3,3,2];
+  const marioLargeSprites=new Map([marioIdle,marioWalk,marioJump,marioDead].map(data=>[
+    data,data.flatMap((row,i)=>Array(marioLargeRowHeights[i]).fill(row))
+  ]));
   const goombaSprite=[
     '     aaaaaa     ','    aaaaaaaa    ','   aaaaaaaaaa   ','  aaaaaaaaaaaa  ',' aadaaaaaaaadaa ',' aaaddaaaaddaaa ','aaaawdaaaadwaaaa','aaaawwdaaawwaaaa','aaaawwwaawwwaaaa',' aaaaaaaaaaaaaa ','  aaaaaaaaaaaa  ','    ssssss      ','   ssssssss     ','  dddssssddd    ',' dddddssddddd   ','  dddd  dddd    '
   ].map(s=>s.replaceAll(' ','.'));
@@ -388,10 +393,8 @@
   function drawTiles(){const start=Math.max(0,Math.floor(cam/T)-1),end=Math.min(COLS-1,Math.ceil((cam+W)/T));for(let y=0;y<ROWS;y++)for(let x=start;x<=end;x++){const c=level[y][x];if(c===' ')continue;const bump=bumps.get(x+','+y);tileArt(c,x*T-cam,y*T-(bump?Math.sin(bump/.2*Math.PI)*9:0),x,y);}}
   function drawMario(p,mini=false){if(p.immune>0&&Math.floor(clock*16)%2===0&&state==='playing')return;let data=p.dead?marioDead:!p.grounded&&state!=='title'?marioJump:Math.abs(p.vx)>15&&Math.floor(p.walk/13)%2===0?marioWalk:marioIdle;let colors={...palette,b:'#385782'};if(p.power===2){colors.r='#fff2d3';colors.b='#e34b30';}if(p.star>0){const cycle=Math.floor(clock*14)%4;colors.r=['#fff4be','#91deac','#f5b1e1','#a9e4f8'][cycle];colors.b=['#efb34c','#34a1d5','#834fc9','#f25b68'][cycle];colors.h='#fff2d0';}
     const x=p.x-cam-5,y=p.y+p.h-32;
-    if(p.power>0&&!mini){ // Add a pixel-art torso to the 16px head/leg silhouette.
-      sprite(data.slice(0,7),x,p.y,2,p.facing<0,colors);
-      const body=data.slice(7,12);ctx.save();ctx.translate(Math.round(x)+(p.facing<0?32:0),Math.round(p.y+14));if(p.facing<0)ctx.scale(-1,1);sprite(body,0,0,2,false,colors);sprite(body,0,10,2,false,colors);sprite(data.slice(12),0,30,2,false,colors);ctx.restore();
-    }else sprite(data,x,y,2,p.facing<0,colors);
+    if(p.power>0&&!mini)sprite(marioLargeSprites.get(data),x,p.y,2,p.facing<0,colors);
+    else sprite(data,x,y,2,p.facing<0,colors);
     if(p.star>0&&Math.random()<.25&&state==='playing')spark(p.x+10,p.y+p.h/2,'#fff3ba',1);
   }
   function drawEnemy(e){if(e.x+e.w<cam-40||e.x>cam+W+40)return;const x=e.x-cam;if(e.dead&&e.flat){fill('#804e34',x,e.y+e.h-8,30,8);fill('#ebbd8d',x+5,e.y+e.h-6,20,4);return;}ctx.save();if(e.dead){ctx.translate(Math.round(x+14),Math.round(e.y+15));ctx.rotate(Math.PI);ctx.translate(-Math.round(x+14),-Math.round(e.y+15));}if(e.shell){fill('#244c2f',x+2,e.y+6,24,17);fill('#e1d6a0',x,e.y+18,28,6);fill('#62a33d',x+4,e.y+3,20,14);fill('#89c35a',x+8,e.y+1,12,5);fill('#397d32',x+12,e.y+6,3,10);fill('#397d32',x+4,e.y+12,20,3);}else if(e.kind==='goomba'){sprite(goombaSprite,x-2,e.y-4,2,Math.floor(clock*7)%2===0); }else sprite(koopaSprite,x-3,e.y+4,2,e.vx>0);ctx.restore();}
